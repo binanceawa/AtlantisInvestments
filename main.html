@@ -218,3 +218,113 @@
       padding: 1.5rem;
       background: var(--bg-primary);
       border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .about-section h3 {
+      font-size: 1rem;
+      color: var(--teal);
+      margin-bottom: 0.5rem;
+    }
+    .tier-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .tier-info span {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; }
+      nav { width: 100%; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media print {
+      nav, button, .wallet-badge { display: none !important; }
+      .panel { break-inside: avoid; }
+    }
+    .loading { opacity: 0.7; pointer-events: none; }
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .text-muted { color: var(--text-muted); }
+    .text-small { font-size: 0.85rem; }
+    .faq-item { margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-primary); border-radius: var(--radius); border: 1px solid var(--border); }
+    .faq-item h4 { font-size: 0.95rem; color: var(--accent); margin-bottom: 0.35rem; }
+    .faq-item p { font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; }
+    .constants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .constant-item { padding: 0.5rem; background: var(--bg-primary); border-radius: 6px; font-size: 0.8rem; }
+    .constant-item .k { color: var(--text-muted); }
+    .constant-item .v { color: var(--teal); font-weight: 600; }
+    .footer-link { color: var(--accent); text-decoration: none; }
+    .footer-link:hover { text-decoration: underline; }
+    .header-wrap { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  </style>
+  <!--
+    AtlantisInvestments — Single-page web interface for WizardFinance.
+    Sections: Config (contract + RPC), Dashboard (global stats), Advisors, Portfolios,
+    Create Portfolio, Deposit, Withdraw, My Balances, About (tiers, constants, FAQ).
+  -->
+</head>
+<body>
+  <header>
+    <div>
+      <h1>AtlantisInvestments</h1>
+      <p>WizardFinance — Advice &amp; investment platform</p>
+    </div>
+    <div class="wallet-badge" id="walletBadge">Not connected</div>
+    <nav>
+      <button type="button" data-panel="config">Config</button>
+      <button type="button" data-panel="dashboard">Dashboard</button>
+      <button type="button" data-panel="advisors">Advisors</button>
+      <button type="button" data-panel="portfolios">Portfolios</button>
+      <button type="button" data-panel="create">Create Portfolio</button>
+      <button type="button" data-panel="deposit">Deposit</button>
+      <button type="button" data-panel="withdraw">Withdraw</button>
+      <button type="button" data-panel="balances">My Balances</button>
+      <button type="button" data-panel="about">About</button>
+    </nav>
+  </header>
+  <main>
+    <section class="panel visible" id="panel-config">
+      <h2>Config</h2>
+      <div class="form-group">
+        <label>WizardFinance contract address</label>
+        <input type="text" id="contractAddress" placeholder="0x..." />
+      </div>
+      <div class="form-group">
+        <label>RPC URL (optional)</label>
+        <input type="text" id="rpcUrl" placeholder="https://..." />
+      </div>
+      <button type="button" class="primary" id="saveConfig">Save</button>
+      <div class="result-box" id="configResult" style="display:none;"></div>
+    </section>
+    <section class="panel" id="panel-dashboard">
+      <h2>Dashboard</h2>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="result-box" id="dashboardResult" style="display:none;"></div>
+    </section>
+    <section class="panel" id="panel-advisors">
+      <h2>Advisors</h2>
+      <button type="button" class="primary" id="refreshAdvisors">Refresh</button>
+      <div id="advisorsTableWrap" style="margin-top:1rem;"></div>
+      <div class="result-box" id="advisorsResult" style="display:none;"></div>
+    </section>
+    <section class="panel" id="panel-portfolios">
+      <h2>Portfolios</h2>
+      <button type="button" class="primary" id="refreshPortfolios">Refresh</button>
+      <div id="portfoliosTableWrap" style="margin-top:1rem;"></div>
+      <div class="result-box" id="portfoliosResult" style="display:none;"></div>
+    </section>
+    <section class="panel" id="panel-create">
+      <h2>Create Portfolio</h2>
+      <div class="form-group">
+        <label>Advisor ID</label>
+        <input type="number" id="createAdvisorId" min="1" placeholder="1" />
+      </div>
+      <button type="button" class="primary" id="btnCreatePortfolio">Create</button>
+      <div class="result-box" id="createResult" style="display:none;"></div>
+    </section>

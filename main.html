@@ -658,3 +658,113 @@
           let rows = '<table><thead><tr><th>ID</th><th>Wallet</th><th>Active</th><th>Clients</th><th>Fees (ETH)</th></tr></thead><tbody>';
           for (let i = 1; i <= count; i++) {
             const a = await c.getAdvisor(i);
+            const fees = weiToEth(a[3]);
+            rows += '<tr><td>' + i + '</td><td class="mono">' + shortAddr(a[0]) + '</td><td>' + (a[1] ? 'Yes' : 'No') + '</td><td>' + a[2] + '</td><td>' + fees.toFixed(4) + '</td></tr>';
+          }
+          rows += '</tbody></table>';
+          wrap.innerHTML = rows;
+        } catch (e) {
+          showResult('advisorsResult', 'Error: ' + (e.message || e), true);
+        }
+      }
+
+      async function loadPortfolios() {
+        const wrap = document.getElementById('portfoliosTableWrap');
+        const res = document.getElementById('portfoliosResult');
+        wrap.innerHTML = '';
+        res.style.display = 'none';
+        const c = getContract();
+        if (!c) {
+          showResult('portfoliosResult', 'Set contract address.', true);
+          return;
+        }
+        try {
+          const count = Number(await c.portfolioCount());
+          if (count === 0) {
+            wrap.innerHTML = '<p>No portfolios.</p>';
+            return;
+          }
+          let rows = '<table><thead><tr><th>ID</th><th>Client</th><th>Advisor</th><th>Deposited</th><th>Withdrawn</th><th>Status</th></tr></thead><tbody>';
+          for (let i = 1; i <= count; i++) {
+            const p = await c.getPortfolio(i);
+            const dep = weiToEth(p[2]);
+            const with_ = weiToEth(p[3]);
+            rows += '<tr><td>' + i + '</td><td class="mono">' + shortAddr(p[0]) + '</td><td>' + p[1] + '</td><td>' + dep.toFixed(4) + '</td><td>' + with_.toFixed(4) + '</td><td>' + (p[5] ? 'Closed' : 'Open') + '</td></tr>';
+          }
+          rows += '</tbody></table>';
+          wrap.innerHTML = rows;
+        } catch (e) {
+          showResult('portfoliosResult', 'Error: ' + (e.message || e), true);
+        }
+      }
+
+      async function loadBalances() {
+        const wrap = document.getElementById('balancesList');
+        const res = document.getElementById('balancesResult');
+        wrap.innerHTML = '';
+        res.style.display = 'none';
+        if (!userAddress) {
+          showResult('balancesResult', 'Connect wallet first.', true);
+          return;
+        }
+        const c = getContract();
+        if (!c) {
+          showResult('balancesResult', 'Set contract address.', true);
+          return;
+        }
+        try {
+          const pids = await c.getClientPortfolioIds(userAddress);
+          if (!pids || pids.length === 0) {
+            wrap.innerHTML = '<p>No portfolios for your address.</p>';
+            return;
+          }
+          let html = '<table><thead><tr><th>Portfolio ID</th><th>ETH Balance</th></tr></thead><tbody>';
+          for (const pid of pids) {
+            const bal = await c.getPortfolioBalance(pid, ZERO);
+            html += '<tr><td>' + pid + '</td><td>' + weiToEth(bal).toFixed(6) + ' ETH</td></tr>';
+          }
+          html += '</tbody></table>';
+          wrap.innerHTML = html;
+        } catch (e) {
+          showResult('balancesResult', 'Error: ' + (e.message || e), true);
+        }
+      }
+
+      document.getElementById('btnCreatePortfolio').addEventListener('click', async function () {
+        const advisorId = document.getElementById('createAdvisorId').value.trim();
+        const res = document.getElementById('createResult');
+        if (!advisorId) {
+          showResult('createResult', 'Enter advisor ID.', true);
+          return;
+        }
+        if (!signer) {
+          showResult('createResult', 'Connect wallet with signer.', true);
+          return;
+        }
+        const c = getContract();
+        if (!c) {
+          showResult('createResult', 'Set contract address.', true);
+          return;
+        }
+        this.disabled = true;
+        try {
+          const tx = await c.createPortfolio(advisorId);
+          await tx.wait();
+          showResult('createResult', 'Portfolio created. Tx: ' + tx.hash, false, true);
+        } catch (e) {
+          showResult('createResult', 'Error: ' + (e.message || e), true);
+        }
+        this.disabled = false;
+      });
+
+      document.getElementById('btnDeposit').addEventListener('click', async function () {
+        const portfolioId = document.getElementById('depositPortfolioId').value.trim();
+        const amountStr = document.getElementById('depositAmount').value.trim();
+        const token = document.getElementById('depositToken').value.trim() || ZERO;
+        if (!portfolioId || !amountStr) {
+          showResult('depositResult', 'Enter portfolio ID and amount.', true);
+          return;
+        }
+        const amountWei = token === ZERO ? ethToWei(amountStr) : BigInt(amountStr);
+        if (!signer) {
+          showResult('depositResult', 'Connect wallet.', true);

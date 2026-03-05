@@ -878,3 +878,113 @@
       function formatWeiToEth(wei) {
         return formatEth(wei);
       }
+      function getContractAddressFromInput() {
+        return getContractAddress();
+      }
+      function getContractInstance() {
+        return getContract();
+      }
+      function showError(panelResultId, message) {
+        showResult(panelResultId, message, true, false);
+      }
+      function showSuccess(panelResultId, message) {
+        showResult(panelResultId, message, false, true);
+      }
+      function hideResult(panelResultId) {
+        const el = document.getElementById(panelResultId);
+        if (el) {
+          el.style.display = 'none';
+          el.textContent = '';
+        }
+      }
+      function isConnected() {
+        return !!userAddress;
+      }
+      function getCurrentAddress() {
+        return userAddress || '';
+      }
+      function hasContractConfigured() {
+        return !!getContractAddress();
+      }
+      function refreshDashboardIfVisible() {
+        const p = document.getElementById('panel-dashboard');
+        if (p && p.classList.contains('visible')) loadDashboard();
+      }
+      function refreshAdvisorsIfVisible() {
+        const p = document.getElementById('panel-advisors');
+        if (p && p.classList.contains('visible')) loadAdvisors();
+      }
+      function refreshPortfoliosIfVisible() {
+        const p = document.getElementById('panel-portfolios');
+        if (p && p.classList.contains('visible')) loadPortfolios();
+      }
+      function refreshBalancesIfVisible() {
+        const p = document.getElementById('panel-balances');
+        if (p && p.classList.contains('visible')) loadBalances();
+      }
+      function computeAdvisorFeeWei(amountWei) {
+        return (amountWei * BigInt(WF_ADVISOR_FEE_BPS)) / BigInt(WF_BPS);
+      }
+      function computePlatformFeeWei(amountWei) {
+        return (amountWei * BigInt(WF_PLATFORM_FEE_BPS)) / BigInt(WF_BPS);
+      }
+      function computeTotalFeeWei(amountWei) {
+        return computeAdvisorFeeWei(amountWei) + computePlatformFeeWei(amountWei);
+      }
+      function computeNetAfterFeesWei(amountWei) {
+        return amountWei - computeTotalFeeWei(amountWei);
+      }
+      function tierFromNetWei(netWei) {
+        const n = Number(netWei) / 1e18;
+        if (n >= TIER_PLATINUM_MIN_ETH) return 4;
+        if (n >= TIER_GOLD_MIN_ETH) return 3;
+        if (n >= TIER_SILVER_MIN_ETH) return 2;
+        if (n >= TIER_BRONZE_MIN_ETH) return 1;
+        return 0;
+      }
+      function validatePortfolioId(id) {
+        const n = parseInt(id, 10);
+        if (isNaN(n) || n < 1) throw new Error('Invalid portfolio ID');
+        return n;
+      }
+      function validateAdvisorId(id) {
+        const n = parseInt(id, 10);
+        if (isNaN(n) || n < 1) throw new Error('Invalid advisor ID');
+        return n;
+      }
+      function normalizeTokenAddress(addr) {
+        if (!addr || String(addr).trim() === '') return ZERO;
+        let a = String(addr).trim();
+        if (!a.startsWith('0x')) a = '0x' + a;
+        return a;
+      }
+      function isNativeEth(token) {
+        return !token || normalizeTokenAddress(token) === ZERO;
+      }
+      function ensureProvider() {
+        if (typeof window.ethereum === 'undefined') throw new Error('No Web3 provider');
+        return window.ethereum;
+      }
+      function ensureSigner() {
+        if (!signer) throw new Error('Wallet not connected or no signer');
+        return signer;
+      }
+      function ensureContract() {
+        const c = getContract();
+        if (!c) throw new Error('Contract not configured');
+        return c;
+      }
+      function displayTierBadge(tier) {
+        return '<span class="tier-badge ' + tierClass(tier) + '">' + tierName(tier) + '</span>';
+      }
+      function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }

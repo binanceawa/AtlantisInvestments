@@ -768,3 +768,113 @@
         const amountWei = token === ZERO ? ethToWei(amountStr) : BigInt(amountStr);
         if (!signer) {
           showResult('depositResult', 'Connect wallet.', true);
+          return;
+        }
+        const c = getContract();
+        if (!c) {
+          showResult('depositResult', 'Set contract address.', true);
+          return;
+        }
+        this.disabled = true;
+        try {
+          const value = token === ZERO ? amountWei : 0n;
+          const tx = await c.deposit(portfolioId, token, amountWei, { value });
+          await tx.wait();
+          showResult('depositResult', 'Deposit successful. Tx: ' + tx.hash, false, true);
+        } catch (e) {
+          showResult('depositResult', 'Error: ' + (e.message || e), true);
+        }
+        this.disabled = false;
+      });
+
+      document.getElementById('btnWithdraw').addEventListener('click', async function () {
+        const portfolioId = document.getElementById('withdrawPortfolioId').value.trim();
+        const amountStr = document.getElementById('withdrawAmount').value.trim();
+        const token = document.getElementById('withdrawToken').value.trim() || ZERO;
+        if (!portfolioId || !amountStr) {
+          showResult('withdrawResult', 'Enter portfolio ID and amount.', true);
+          return;
+        }
+        const amountWei = token === ZERO ? ethToWei(amountStr) : BigInt(amountStr);
+        if (!signer) {
+          showResult('withdrawResult', 'Connect wallet.', true);
+          return;
+        }
+        const c = getContract();
+        if (!c) {
+          showResult('withdrawResult', 'Set contract address.', true);
+          return;
+        }
+        this.disabled = true;
+        try {
+          const tx = await c.withdraw(portfolioId, token, amountWei);
+          await tx.wait();
+          showResult('withdrawResult', 'Withdraw successful. Tx: ' + tx.hash, false, true);
+        } catch (e) {
+          showResult('withdrawResult', 'Error: ' + (e.message || e), true);
+        }
+        this.disabled = false;
+      });
+
+      document.getElementById('panel-dashboard').addEventListener('transitionend', function () {
+        if (this.classList.contains('visible')) loadDashboard();
+      });
+      document.getElementById('panel-advisors').addEventListener('transitionend', function () {
+        if (this.classList.contains('visible')) loadAdvisors();
+      });
+      document.getElementById('panel-portfolios').addEventListener('transitionend', function () {
+        if (this.classList.contains('visible')) loadPortfolios();
+      });
+      document.getElementById('panel-balances').addEventListener('transitionend', function () {
+        if (this.classList.contains('visible')) loadBalances();
+      });
+
+      const panelObs = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+          if (m.attributeName === 'class') {
+            const p = m.target;
+            if (p.id === 'panel-dashboard' && p.classList.contains('visible')) loadDashboard();
+            if (p.id === 'panel-advisors' && p.classList.contains('visible')) loadAdvisors();
+            if (p.id === 'panel-portfolios' && p.classList.contains('visible')) loadPortfolios();
+            if (p.id === 'panel-balances' && p.classList.contains('visible')) loadBalances();
+          }
+        });
+      });
+      document.querySelectorAll('.panel').forEach(p => panelObs.observe(p, { attributes: true }));
+
+      const walletBtn = document.createElement('button');
+      walletBtn.className = 'primary';
+      walletBtn.textContent = 'Connect Wallet';
+      walletBtn.onclick = connectWallet;
+      document.querySelector('header').insertBefore(walletBtn, document.querySelector('.wallet-badge'));
+
+      // -----------------------------------------------------------------------
+      // Constants and reference (WizardFinance / AtlantisInvestments)
+      // -----------------------------------------------------------------------
+      const WF_BPS = 10000;
+      const WF_ADVISOR_FEE_BPS = 200;
+      const WF_PLATFORM_FEE_BPS = 50;
+      const WF_MIN_DEPOSIT_ETH = 0.01;
+      const WF_MAX_DEPOSIT_ETH = 1000;
+      const WF_MAX_ADVISORS = 128;
+      const WF_MAX_PORTFOLIOS_PER_CLIENT = 24;
+      const TIER_BRONZE_MIN_ETH = 0.1;
+      const TIER_SILVER_MIN_ETH = 1;
+      const TIER_GOLD_MIN_ETH = 10;
+      const TIER_PLATINUM_MIN_ETH = 100;
+
+      function formatEth(val) {
+        if (val === undefined || val === null) return '0';
+        const n = typeof val === 'bigint' ? Number(val) / 1e18 : Number(val);
+        return n.toFixed(6);
+      }
+      function parseEthInput(str) {
+        const s = String(str).trim();
+        if (!s) return 0n;
+        const n = parseFloat(s);
+        if (isNaN(n)) return 0n;
+        return BigInt(Math.floor(n * 1e18));
+      }
+      function formatWeiToEth(wei) {
+        return formatEth(wei);
+      }

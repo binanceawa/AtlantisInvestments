@@ -1318,3 +1318,105 @@
           return localStorage.getItem(key);
         } catch (e) {
           return null;
+        }
+      }
+      function storageSet(key, value) {
+        try {
+          localStorage.setItem(key, value);
+        } catch (e) {}
+      }
+      function storageRemove(key) {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {}
+      }
+      function log() {
+        if (window.console && console.log) console.log.apply(console, arguments);
+      }
+      function warn() {
+        if (window.console && console.warn) console.warn.apply(console, arguments);
+      }
+      function error() {
+        if (window.console && console.error) console.error.apply(console, arguments);
+      }
+      function getPanelIds() {
+        return ['config', 'dashboard', 'advisors', 'portfolios', 'create', 'deposit', 'withdraw', 'balances', 'about'];
+      }
+      function getRequiredAbiNames() {
+        return ['registerAdvisor', 'createPortfolio', 'deposit', 'withdraw', 'closePortfolio', 'getPortfolio', 'getAdvisor', 'getGlobalStats', 'getClientPortfolioIds', 'getPortfolioBalance', 'getClientTier', 'advisorCount', 'portfolioCount'];
+      }
+      function getZeroAddress() {
+        return ZERO;
+      }
+      function getAbi() {
+        return ABI;
+      }
+      function getWeiToEthConverter() {
+        return weiToEth;
+      }
+      function getEthToWeiConverter() {
+        return ethToWei;
+      }
+      function getShortAddrFormatter() {
+        return shortAddr;
+      }
+      function getTierNameFormatter() {
+        return tierName;
+      }
+      function getTierClassFormatter() {
+        return tierClass;
+      }
+      function getShowResultFn() {
+        return showResult;
+      }
+      function getSwitchPanelFn() {
+        return switchPanel;
+      }
+      function getLoadDashboardFn() {
+        return loadDashboard;
+      }
+      function getLoadAdvisorsFn() {
+        return loadAdvisors;
+      }
+      function getLoadPortfoliosFn() {
+        return loadPortfolios;
+      }
+      function getLoadBalancesFn() {
+        return loadBalances;
+      }
+      function getConnectWalletFn() { return connectWallet; }
+      function getContractFn() { return getContract; }
+      function getContractAddressFn() { return getContractAddress; }
+      function getProvider() { return provider; }
+      function getSigner() { return signer; }
+      function getUserAddress() { return userAddress; }
+      function getContractInstanceRef() { return contractInstance; }
+      function setContractInstanceRef(c) { contractInstance = c; }
+      function resetConnection() {
+        provider = null;
+        signer = null;
+        userAddress = null;
+        contractInstance = null;
+        const badge = document.getElementById('walletBadge');
+        if (badge) {
+          badge.textContent = 'Not connected';
+          badge.classList.remove('connected');
+        }
+      }
+      function getSaveConfigFn() { return function () { document.getElementById('saveConfig').click(); }; }
+      function getStorageContractKey() { return STORAGE_CONTRACT; }
+      function getStorageRpcKey() { return STORAGE_RPC; }
+      // AtlantisInvestments — WizardFinance web client. Connect wallet, set contract, use Dashboard / Advisors / Portfolios / Deposit / Withdraw.
+      function atlantisVersion() { return '1.0.0'; }
+      function wizardFinanceContractName() { return 'WizardFinance'; }
+      function getPanelIdsList() { return getPanelIds(); }
+      function getAbiList() { return getAbi(); }
+      function getZeroAddr() { return getZeroAddress(); }
+    })();
+  </script>
+  <!-- AtlantisInvestments v1.0.0 — WizardFinance platform UI. Requires Web3 wallet (e.g. MetaMask) and ethers.js for full functionality. -->
+  <!-- Contract: WizardFinance. Advisors register on-chain; clients create portfolios, deposit, and withdraw. -->
+  <!-- End of AtlantisInvestments. -->
+</body>
+
+</html>

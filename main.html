@@ -548,3 +548,113 @@
         if (contractInstance && contractInstance.target && String(contractInstance.target).toLowerCase() === addr.toLowerCase()) return contractInstance;
         if (!window.ethers) return null;
         try {
+          const abi = ABI;
+          if (signer) contractInstance = new window.ethers.Contract(addr, abi, signer);
+          else if (provider) contractInstance = new window.ethers.Contract(addr, abi, provider);
+          else return null;
+          return contractInstance;
+        } catch (e) {
+          console.error(e);
+          return null;
+        }
+      }
+
+      function showResult(elId, msg, isError, isSuccess) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = msg;
+        el.classList.remove('error', 'success');
+        if (isError) el.classList.add('error');
+        if (isSuccess) el.classList.add('success');
+      }
+
+      function switchPanel(panelId) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        const panel = document.getElementById('panel-' + panelId);
+        if (panel) panel.classList.add('visible');
+        const btn = document.querySelector('nav button[data-panel="' + panelId + '"]');
+        if (btn) btn.classList.add('active');
+      }
+
+      document.querySelectorAll('nav button[data-panel]').forEach(btn => {
+        btn.addEventListener('click', function () {
+          switchPanel(this.getAttribute('data-panel'));
+        });
+      });
+
+      document.getElementById('saveConfig').addEventListener('click', function () {
+        const addr = document.getElementById('contractAddress').value.trim();
+        const rpc = document.getElementById('rpcUrl').value.trim();
+        if (addr) setContractAddress(addr);
+        if (rpc) setRpcUrl(rpc);
+        showResult('configResult', 'Saved.', false, true);
+      });
+
+      window.addEventListener('load', function () {
+        const saved = localStorage.getItem(STORAGE_CONTRACT);
+        const savedRpc = localStorage.getItem(STORAGE_RPC);
+        if (saved) document.getElementById('contractAddress').value = saved;
+        if (savedRpc) document.getElementById('rpcUrl').value = savedRpc;
+        if (window.ethereum) {
+          window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+            if (accounts.length) connectWallet();
+          });
+        }
+      });
+
+      document.getElementById('refreshAdvisors').addEventListener('click', loadAdvisors);
+      document.getElementById('refreshPortfolios').addEventListener('click', loadPortfolios);
+      document.getElementById('refreshBalances').addEventListener('click', loadBalances);
+
+      async function loadDashboard() {
+        const wrap = document.getElementById('statsGrid');
+        const res = document.getElementById('dashboardResult');
+        wrap.innerHTML = '';
+        res.style.display = 'none';
+        const c = getContract();
+        if (!c) {
+          showResult('dashboardResult', 'Set contract address and connect wallet.', true);
+          return;
+        }
+        try {
+          const stats = await c.getGlobalStats();
+          const totalDep = weiToEth(stats[0]);
+          const totalWith = weiToEth(stats[1]);
+          const totalFees = weiToEth(stats[2]);
+          const advisors = Number(stats[3]);
+          const portfolios = Number(stats[4]);
+          const paused = stats[5];
+          wrap.innerHTML = [
+            '<div class="stat-card"><span class="value">' + totalDep.toFixed(4) + '</span><span class="label">Total Deposits (ETH)</span></div>',
+            '<div class="stat-card"><span class="value">' + totalWith.toFixed(4) + '</span><span class="label">Total Withdrawn (ETH)</span></div>',
+            '<div class="stat-card"><span class="value">' + totalFees.toFixed(4) + '</span><span class="label">Total Fees (ETH)</span></div>',
+            '<div class="stat-card"><span class="value">' + advisors + '</span><span class="label">Advisors</span></div>',
+            '<div class="stat-card"><span class="value">' + portfolios + '</span><span class="label">Portfolios</span></div>',
+            '<div class="stat-card"><span class="value">' + (paused ? 'Yes' : 'No') + '</span><span class="label">Paused</span></div>'
+          ].join('');
+        } catch (e) {
+          showResult('dashboardResult', 'Error: ' + (e.message || e), true);
+        }
+      }
+
+      async function loadAdvisors() {
+        const wrap = document.getElementById('advisorsTableWrap');
+        const res = document.getElementById('advisorsResult');
+        wrap.innerHTML = '';
+        res.style.display = 'none';
+        const c = getContract();
+        if (!c) {
+          showResult('advisorsResult', 'Set contract address.', true);
+          return;
+        }
+        try {
+          const count = Number(await c.advisorCount());
+          if (count === 0) {
+            wrap.innerHTML = '<p>No advisors.</p>';
+            return;
+          }
+          let rows = '<table><thead><tr><th>ID</th><th>Wallet</th><th>Active</th><th>Clients</th><th>Fees (ETH)</th></tr></thead><tbody>';
+          for (let i = 1; i <= count; i++) {
+            const a = await c.getAdvisor(i);

@@ -988,3 +988,113 @@
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
+      function formatTxHashForDisplay(hash) {
+        if (!hash) return '';
+        const h = String(hash);
+        if (h.length <= 18) return h;
+        return h.slice(0, 10) + '...' + h.slice(-8);
+      }
+      function openExplorerTx(chainId, txHash) {
+        let base = 'https://etherscan.io';
+        if (chainId === 5) base = 'https://goerli.etherscan.io';
+        if (chainId === 11155111) base = 'https://sepolia.etherscan.io';
+        window.open(base + '/tx/' + txHash, '_blank');
+      }
+      function getStorageKeyContract() { return STORAGE_CONTRACT; }
+      function getStorageKeyRpc() { return STORAGE_RPC; }
+      function clearStoredConfig() {
+        localStorage.removeItem(STORAGE_CONTRACT);
+        localStorage.removeItem(STORAGE_RPC);
+      }
+      function loadStoredConfig() {
+        const addr = localStorage.getItem(STORAGE_CONTRACT);
+        const rpc = localStorage.getItem(STORAGE_RPC);
+        if (addr) document.getElementById('contractAddress').value = addr;
+        if (rpc) document.getElementById('rpcUrl').value = rpc;
+      }
+      function setLoading(buttonEl, loading) {
+        if (!buttonEl) return;
+        if (loading) {
+          buttonEl.classList.add('loading');
+          buttonEl.disabled = true;
+        } else {
+          buttonEl.classList.remove('loading');
+          buttonEl.disabled = false;
+        }
+      }
+      function debounce(fn, ms) {
+        let t;
+        return function () {
+          clearTimeout(t);
+          t = setTimeout(fn, ms);
+        };
+      }
+      function throttle(fn, ms) {
+        let last = 0;
+        return function () {
+          const now = Date.now();
+          if (now - last >= ms) {
+            last = now;
+            fn();
+          }
+        };
+      }
+      const refreshDashboardDebounced = debounce(loadDashboard, 300);
+      const refreshAdvisorsThrottled = throttle(loadAdvisors, 1000);
+
+      // -----------------------------------------------------------------------
+      // Additional UI and data helpers (AtlantisInvestments)
+      // -----------------------------------------------------------------------
+      function buildStatCard(value, label) {
+        return '<div class="stat-card"><span class="value">' + value + '</span><span class="label">' + label + '</span></div>';
+      }
+      function buildTableRow(cells) {
+        return '<tr>' + cells.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+      }
+      function buildTableHead(headers) {
+        return '<thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead>';
+      }
+      function buildTableBody(rows) {
+        return '<tbody>' + rows.map(buildTableRow).join('') + '</tbody>';
+      }
+      function buildTable(headers, rows) {
+        return '<table>' + buildTableHead(headers) + buildTableBody(rows) + '</table>';
+      }
+      function emptyNode(id) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+      }
+      function setNodeHtml(id, html) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+      }
+      function getInputValue(id) {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+      }
+      function setInputValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+      }
+      function disableButton(id, disabled) {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+      }
+      function focusPanel(panelId) {
+        switchPanel(panelId);
+      }
+      function getPanelElement(panelId) {
+        return document.getElementById('panel-' + panelId);
+      }
+      function isPanelVisible(panelId) {
+        const p = getPanelElement(panelId);
+        return p ? p.classList.contains('visible') : false;
+      }
+      function triggerRefreshAll() {
+        loadDashboard();
+        loadAdvisors();
+        loadPortfolios();
+        if (userAddress) loadBalances();
+      }
+      function weiToEthNumber(wei) {
+        return Number(wei) / 1e18;

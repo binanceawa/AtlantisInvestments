@@ -1098,3 +1098,113 @@
       }
       function weiToEthNumber(wei) {
         return Number(wei) / 1e18;
+      }
+      function ethNumberToWei(eth) {
+        return BigInt(Math.floor(eth * 1e18));
+      }
+      function formatEthFixed(eth, decimals) {
+        return Number(eth).toFixed(decimals || 6);
+      }
+      function truncateMiddle(str, start, end) {
+        if (!str || str.length <= (start + end)) return str;
+        return str.slice(0, start) + '...' + str.slice(-end);
+      }
+      function formatAddressShort(addr) {
+        return truncateMiddle(String(addr), 6, 4);
+      }
+      function safeParseInt(str, def) {
+        const n = parseInt(str, 10);
+        return isNaN(n) ? (def !== undefined ? def : 0) : n;
+      }
+      function safeParseFloat(str, def) {
+        const n = parseFloat(str);
+        return isNaN(n) ? (def !== undefined ? def : 0) : n;
+      }
+      function showPanelResult(panelName, message, type) {
+        const id = panelName + 'Result';
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = 'block';
+        el.textContent = message;
+        el.classList.remove('error', 'success');
+        if (type === 'error') el.classList.add('error');
+        if (type === 'success') el.classList.add('success');
+      }
+      function getBlockExplorerUrl(chainId, hash, type) {
+        type = type || 'tx';
+        let base = 'https://etherscan.io';
+        if (chainId === 5) base = 'https://goerli.etherscan.io';
+        if (chainId === 11155111) base = 'https://sepolia.etherscan.io';
+        return base + '/' + type + '/' + hash;
+      }
+      function openBlockExplorer(chainId, hash, type) {
+        window.open(getBlockExplorerUrl(chainId, hash, type), '_blank');
+      }
+      function getChainIdFromProvider() {
+        if (!provider) return null;
+        return provider.request && provider.request({ method: 'eth_chainId' }).then(id => parseInt(id, 16)).catch(() => null);
+      }
+      function formatTimestamp(ts) {
+        if (!ts) return '';
+        const d = new Date(ts * 1000);
+        return d.toLocaleString();
+      }
+      function formatBlockNumber(block) {
+        return block != null ? String(block) : '';
+      }
+      function compareAddresses(a, b) {
+        return String(a).toLowerCase() === String(b).toLowerCase();
+      }
+      function isMyPortfolio(clientAddr) {
+        return userAddress && compareAddresses(clientAddr, userAddress);
+      }
+      function getTierLabel(tier) {
+        return tierName(tier);
+      }
+      function getTierCssClass(tier) {
+        return tierClass(tier);
+      }
+      function validateAmountPositive(amountWei) {
+        if (amountWei === undefined || amountWei === null) return false;
+        const b = BigInt(amountWei);
+        return b > 0n;
+      }
+      function validateMinDeposit(amountWei) {
+        const min = ethNumberToWei(WF_MIN_DEPOSIT_ETH);
+        return BigInt(amountWei) >= min;
+      }
+      function validateMaxDeposit(amountWei) {
+        const max = ethNumberToWei(WF_MAX_DEPOSIT_ETH);
+        return BigInt(amountWei) <= max;
+      }
+      function getMinDepositWei() {
+        return ethNumberToWei(WF_MIN_DEPOSIT_ETH);
+      }
+      function getMaxDepositWei() {
+        return ethNumberToWei(WF_MAX_DEPOSIT_ETH);
+      }
+      function getAdvisorFeePercent() {
+        return (WF_ADVISOR_FEE_BPS / WF_BPS) * 100;
+      }
+      function getPlatformFeePercent() {
+        return (WF_PLATFORM_FEE_BPS / WF_BPS) * 100;
+      }
+      function getTotalFeePercent() {
+        return getAdvisorFeePercent() + getPlatformFeePercent();
+      }
+      function estimateFeeWei(amountWei) {
+        return (amountWei * BigInt(WF_ADVISOR_FEE_BPS + WF_PLATFORM_FEE_BPS)) / BigInt(WF_BPS);
+      }
+      function estimateNetWei(amountWei) {
+        return amountWei - estimateFeeWei(amountWei);
+      }
+      function APP_VERSION() { return '1.0.0'; }
+      function APP_NAME() { return 'AtlantisInvestments'; }
+      function CONTRACT_NAME() { return 'WizardFinance'; }
+
+      // -----------------------------------------------------------------------
+      // Extended reference and fallbacks
+      // -----------------------------------------------------------------------
+      function ensureEthers() {
+        if (typeof window.ethers === 'undefined') throw new Error('ethers.js not loaded. Include: <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>');
+        return window.ethers;

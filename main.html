@@ -438,3 +438,113 @@
     (function () {
       const ZERO = '0x0000000000000000000000000000000000000000';
       const STORAGE_CONTRACT = 'atlantis_contract';
+      const STORAGE_RPC = 'atlantis_rpc';
+      const ABI = [
+        { inputs: [], name: 'registerAdvisor', outputs: [{ type: 'uint256' }], stateMutability: 'nonpayable', type: 'function' },
+        { inputs: [{ name: 'advisorId', type: 'uint256' }], name: 'createPortfolio', outputs: [{ type: 'uint256' }], stateMutability: 'nonpayable', type: 'function' },
+        { inputs: [{ name: 'portfolioId', type: 'uint256' }, { name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }], name: 'deposit', outputs: [], stateMutability: 'payable', type: 'function' },
+        { inputs: [{ name: 'portfolioId', type: 'uint256' }, { name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }], name: 'withdraw', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+        { inputs: [{ name: 'portfolioId', type: 'uint256' }], name: 'closePortfolio', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+        { inputs: [{ name: 'portfolioId', type: 'uint256' }], name: 'getPortfolio', outputs: [
+          { name: 'client_', type: 'address' }, { name: 'advisorId_', type: 'uint256' }, { name: 'totalDeposited_', type: 'uint256' }, { name: 'totalWithdrawn_', type: 'uint256' }, { name: 'createdAtBlock_', type: 'uint256' }, { name: 'closed_', type: 'bool' }
+        ], stateMutability: 'view', type: 'function' },
+        { inputs: [{ name: 'advisorId', type: 'uint256' }], name: 'getAdvisor', outputs: [
+          { name: 'wallet_', type: 'address' }, { name: 'active_', type: 'bool' }, { name: 'totalClients_', type: 'uint256' }, { name: 'totalFeesEarned_', type: 'uint256' }, { name: 'registeredAtBlock_', type: 'uint256' }
+        ], stateMutability: 'view', type: 'function' },
+        { inputs: [], name: 'getGlobalStats', outputs: [
+          { name: 'totalDeposits_', type: 'uint256' }, { name: 'totalWithdrawn_', type: 'uint256' }, { name: 'totalFeesCollected_', type: 'uint256' }, { name: 'advisorCount_', type: 'uint256' }, { name: 'portfolioCount_', type: 'uint256' }, { name: 'paused_', type: 'bool' }
+        ], stateMutability: 'view', type: 'function' },
+        { inputs: [{ name: 'client', type: 'address' }], name: 'getClientPortfolioIds', outputs: [{ type: 'uint256[]' }], stateMutability: 'view', type: 'function' },
+        { inputs: [{ name: 'portfolioId', type: 'uint256' }, { name: 'token', type: 'address' }], name: 'getPortfolioBalance', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+        { inputs: [{ name: 'client', type: 'address' }], name: 'getClientTier', outputs: [{ type: 'uint8' }], stateMutability: 'view', type: 'function' },
+        { inputs: [], name: 'advisorCount', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+        { inputs: [], name: 'portfolioCount', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' }
+      ];
+
+      let provider = null;
+      let signer = null;
+      let userAddress = null;
+      let contractInstance = null;
+
+      function getContractAddress() {
+        return document.getElementById('contractAddress').value.trim() || localStorage.getItem(STORAGE_CONTRACT) || '';
+      }
+      function setContractAddress(addr) {
+        document.getElementById('contractAddress').value = addr;
+        if (addr) localStorage.setItem(STORAGE_CONTRACT, addr);
+      }
+      function getRpcUrl() {
+        return document.getElementById('rpcUrl').value.trim() || localStorage.getItem(STORAGE_RPC) || '';
+      }
+      function setRpcUrl(url) {
+        document.getElementById('rpcUrl').value = url;
+        if (url) localStorage.setItem(STORAGE_RPC, url);
+      }
+
+      function weiToEth(wei) {
+        if (typeof wei === 'string') wei = BigInt(wei);
+        return Number(wei) / 1e18;
+      }
+      function ethToWei(eth) {
+        return BigInt(Math.floor(Number(eth) * 1e18));
+      }
+      function shortAddr(addr) {
+        if (!addr) return '';
+        addr = String(addr);
+        if (addr.length <= 14) return addr;
+        return addr.slice(0, 6) + '...' + addr.slice(-4);
+      }
+      function tierClass(tier) {
+        const t = Number(tier);
+        if (t === 0) return 'tier-none';
+        if (t === 1) return 'tier-bronze';
+        if (t === 2) return 'tier-silver';
+        if (t === 3) return 'tier-gold';
+        if (t === 4) return 'tier-platinum';
+        return 'tier-none';
+      }
+      function tierName(tier) {
+        const names = ['None', 'Bronze', 'Silver', 'Gold', 'Platinum'];
+        return names[Number(tier)] || 'Unknown';
+      }
+
+      async function connectWallet() {
+        if (typeof window.ethereum === 'undefined') {
+          alert('MetaMask or another Web3 wallet is required.');
+          return;
+        }
+        try {
+          provider = new window.ethereum;
+          const accounts = await provider.request({ method: 'eth_requestAccounts' });
+          if (accounts.length) {
+            userAddress = accounts[0];
+            const badge = document.getElementById('walletBadge');
+            badge.textContent = shortAddr(userAddress);
+            badge.classList.add('connected');
+            const rpc = getRpcUrl();
+            if (rpc && window.ethers) {
+              try {
+                const p = new window.ethers.JsonRpcProvider(rpc);
+                provider = p;
+                signer = await p.getSigner(userAddress);
+              } catch (e) {
+                signer = null;
+              }
+            }
+            if (!signer && window.ethers && window.ethereum) {
+              const p = new window.ethers.BrowserProvider(window.ethereum);
+              signer = await p.getSigner();
+            }
+          }
+        } catch (e) {
+          console.error(e);
+          alert('Failed to connect: ' + (e.message || e));
+        }
+      }
+
+      function getContract() {
+        const addr = getContractAddress();
+        if (!addr) return null;
+        if (contractInstance && contractInstance.target && String(contractInstance.target).toLowerCase() === addr.toLowerCase()) return contractInstance;
+        if (!window.ethers) return null;
+        try {
